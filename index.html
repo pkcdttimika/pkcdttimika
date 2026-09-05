@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pelayanan Kepabeanan dan Cukai dan Dukungan Teknis</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Disesuaikan ke folder public/css/pakaian.css -->
+    <link rel="stylesheet" href="public/css/pakaian.css">
+    <!-- PapaParse untuk membaca CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {--primary-blue: #003F87; --secondary-blue: #1C5AA0; --light-blue: #3A7BD5; --orange: #F7931E; --white: #FFFFFF;}
+        .hero {position: relative; background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue), var(--light-blue)); min-height: 90vh; color: var(--white); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; padding: 40px 20px; text-align: center;}
+        .shiny-wave {position: absolute; top: 0; left: -120%; width: 240%; height: 120%; background: linear-gradient(120deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0) 100%); transform: skewX(-25deg); animation: waveShine 6s linear infinite; filter: blur(3px); pointer-events: none; z-index: 10;}
+        @keyframes waveShine {0% {left: -150%;background-position: 0% 50%;} 50% {left: 50%; background-position: 200% 50%;} 100% {left: 350%; background-position: 0% 50%;}}
+        /* Disesuaikan path gambar Kantor.jpg */
+        #Beranda {scroll-margin-top: 100px; background-image: linear-gradient(rgba(19, 59, 108, 0.85), rgba(19, 59, 108, 0.85)), url('public/img/Kantor.jpg'); background-position: center; background-repeat: no-repeat; background-size: cover;}
+        .hero-content {position: relative; z-index: 20; padding-top: 3rem; margin-bottom: 3rem;}
+        .hero-content h1 {font-size: 3.2rem; font-weight: 900; margin-bottom: 1rem; line-height: 1.1; text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);}
+        .hero-content p {font-size: 1.2rem; margin-bottom: 2rem; font-weight: 400; text-shadow: 0 0 8px rgba(0, 0, 0, 0.2);}
+        .cta-button {background-color: var(--orange); color: var(--primary-blue); padding: 1rem 2.5rem; border-radius: 50px; font-weight: 700; font-size: 1.1rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; transition: background-color 0.3s ease, color 0.3s ease;}
+        .cta-button:hover,.cta-button:focus {background-color: #e07e19; color: white; outline: none;}
+
+        /* --- Style Kotak Rekap Live di Beranda --- */
+        .summary-grid {
+            position: relative;
+            z-index: 20;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            margin-top: 20px;
+            padding: 0 10px;
+        }
+        .summary-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: left;
+            color: var(--text-dark, #333);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border-top: 4px solid var(--orange);
+            transition: transform 0.3s ease;
+        }
+        .summary-card:hover { transform: translateY(-5px); }
+        .summary-card h3 {
+            font-size: 1.1rem;
+            color: var(--primary-blue);
+            margin-top: 0;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .summary-item {
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .summary-item span:last-child {
+            font-weight: 700;
+            color: var(--secondary-blue);
+        }
+
+        @media screen and (max-width: 1024px) {
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media screen and (max-width: 768px) {
+            .hero-content h1 {font-size: 2.3rem;}
+            .hero-content p {font-size: 0.95rem;}
+            .summary-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="loader-content">
+            <!-- Disesuaikan path Logo.png -->
+            <div class="loader-logo"><img src="public/img/Logo.png" alt="Logo" style="width: 100px; height: 100px;"></div>
+            <h2 style="color: white; margin-bottom: 1rem;">Pelayanan Kepabeanan dan Cukai dan Dukungan Teknis</h2>
+            <div class="loader-bar">
+                <div class="loader-progress"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="scroll-top" id="scrollTop"><i class="fas fa-arrow-up"></i></div>
+    
+    <header class="header">
+        <div class="nav-container" id="#Beranda">
+            <!-- Disesuaikan path Logo.png -->
+            <div class="logo"><img src="public/img/Logo.png" alt="Logo" style="width: 40px; height: 40px;"><span>PKCDT Timika</span></div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="#Beranda"><i class="fas fa-home"></i> Beranda</a></li>
+                    <li><a href="#Kinerja"><i class="fas fa-newspaper"></i> Kinerja</a></li>
+                </ul>
+                <div class="hamburger">
+                    <span></span><span></span><span></span>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- AREA BERANDA YANG TELAH DIPERBARUI DENGAN REKAP LIVE -->
+    <section class="hero" id="Beranda">
+        <div class="shiny-wave"></div>
+        <div class="hero-content">
+            <h1>Pelayanan Kepabeanan<br>dan Cukai dan<br>Dukungan Teknis</h1>
+            <p>Bea Cukai Timika — Pusat Rekapitulasi Data & Layanan Terpadu</p>
+            <a href="#Kinerja" class="cta-button"> JELAJAHI KINERJA <span aria-hidden="true">→</span></a>
+        </div>
+
+        <!-- Grid Ringkasan Live dari 4 CSV -->
+        <div class="summary-grid">
+            <!-- 1. Asistensi UMKM -->
+            <div class="summary-card">
+                <h3><i class="fas fa-hands-helping"></i> Asistensi UMKM</h3>
+                <div class="summary-item"><span>Total Dokumen Berat:</span> <span id="umkmBerat">Memuat...</span></div>
+                <div class="summary-item"><span>Total Devisa:</span> <span id="umkmDevisa">Memuat...</span></div>
+                <div class="summary-item"><span>Negara Tujuan:</span> <span id="umkmNegara">Memuat...</span></div>
+            </div>
+
+            <!-- 2. Kepatuhan Cukai -->
+            <div class="summary-card">
+                <h3><i class="fas fa-wine-bottle"></i> Kepatuhan Cukai</h3>
+                <div class="summary-item"><span>Total NPPBKC:</span> <span id="cukaiTotal">Memuat...</span></div>
+                <div class="summary-item"><span>Status Aman:</span> <span id="cukaiAman">Memuat...</span></div>
+                <div class="summary-item"><span>Segera/Kadaluarsa:</span> <span id="cukaiPerhatian">Memuat...</span></div>
+            </div>
+
+            <!-- 3. Pelayanan Kepabeanan -->
+            <div class="summary-card">
+                <h3><i class="fas fa-ship"></i> Kepabeanan</h3>
+                <div class="summary-item"><span>Total Dokumen PIB:</span> <span id="pibTotal">Memuat...</span></div>
+                <div class="summary-item"><span>Total Dokumen PEB:</span> <span id="pebTotal">Memuat...</span></div>
+                <div class="summary-item"><span>Penjaluran Hijau/Merah:</span> <span id="pibJalur">Memuat...</span></div>
+            </div>
+
+            <!-- 4. Pelayanan TIK -->
+            <div class="summary-card">
+                <h3><i class="fas fa-laptop-code"></i> Layanan TIK</h3>
+                <div class="summary-item"><span>Jumlah Aduan:</span> <span id="tikTotal">Memuat...</span></div>
+                <div class="summary-item"><span>Selesai:</span> <span id="tikSelesai">Memuat...</span></div>
+                <div class="summary-item"><span>On Progress:</span> <span id="tikProses">Memuat...</span></div>
+            </div>
+        </div>
+    </section>
+
+    <main>
+        <section class="container" id="Kinerja">
+            <h2 class="section-title">Capaian Kinerja</h2>
+            <div class="news-grid">
+                <article class="news-card" onclick="openDashboard('asistensi')">
+                    <div class="news-image">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>Asistensi UMKM</div>
+                    </div>
+                    <div class="news-content">
+                        <div class="news-date"><i class="fas fa-calendar-alt"></i> 2026</div>
+                        <h3 class="news-title">Asistensi UMKM Berorientasi Ekspor</h3>
+                        <p>Pemantauan dokumen, devisa, dan perluasan pasar ekspor UMKM.</p>
+                    </div>
+                </article>
+                <article class="news-card" onclick="openDashboard('cukai')">
+                    <div class="news-image">
+                        <i class="fas fa-laptop-code"></i>
+                        <div>Pelayanan Cukai</div>
+                    </div>
+                    <div class="news-content">
+                        <div class="news-date"><i class="fas fa-calendar-alt"></i> 2026</div>
+                        <h3 class="news-title">Kepatuhan Pengguna Jasa di Bidang Cukai</h3>
+                        <p>Monitoring NPPBKC, masa berlaku izin, dan kepatuhan pengusaha.</p>
+                    </div>
+                </article>
+                <article class="news-card" onclick="openDashboard('kepabeanan')">
+                    <div class="news-image">
+                        <i class="fas fa-store-alt"></i>
+                        <div>Pelayanan Kepabeanan</div>
+                    </div>
+                    <div class="news-content">
+                        <div class="news-date"><i class="fas fa-calendar-alt"></i> 2026</div>
+                        <h3 class="news-title">Kualitas Pelayanan Kepabeanan dan Cukai</h3>
+                        <p>Rekapitulasi dokumen pendaftaran ekspor, impor, dan penjaluran.</p>
+                    </div>
+                </article>
+                <article class="news-card" onclick="openDashboard('tik')">
+                    <div class="news-image">
+                        <i class="fas fa-store-alt"></i>
+                        <div>Pelayanan TIK</div>
+                    </div>
+                    <div class="news-content">
+                        <div class="news-date"><i class="fas fa-calendar-alt"></i> 2026</div>
+                        <h3 class="news-title">Kualitas Pelayanan TIK</h3>
+                        <p>Monitoring penanganan aduan dan kendala sistem layanan.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <style>
+            .news-card {cursor: pointer !important; transition: all 0.3s ease !important;}
+            .news-card:hover {transform: translateY(-10px) !important; box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;}
+        </style>
+    </main>
+
+    <footer class="footer" id="kontak">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>PKCDT Timika</h3>
+                <a href="https://www.google.com/maps/place/Kantor+Pengawasan+dan+Pelayanan+Bea+dan+Cukai+Tipe+Madya+Pabean+C+Timika/@-4.6854119,136.8167604,34054m/data=!3m1!1e3!4m10!1m2!2m1!1sbc+timika!3m6!1s0x6824886c7fbef839:0x9dd88582b7c8b5b3!8m2!3d-4.8205881!4d136.8472083!15sCgliYyB0aW1pa2GSARFnb3Zlcm5tZW50X29mZmljZeABAA!16s%2Fg%2F11b7wnw80n?entry=ttu" target="_blank">
+                <p><i class="fas fa-map-marker-alt"></i> Cargo Dock Portsite, Amamapare, <br>Kec. Mimika Tim. Jauh, Kabupaten Mimika, <br> Papua Tengah 99971</p> </a>
+                <a href="https://api.whatsapp.com/send/?phone=6282345674376&text&type=phone_number&app_absent=0" target="_blank">
+                <p><i class="fas fa-phone"></i> 0823-4567-4376</p> </a>
+                <p><i class="fas fa-envelope"></i> pkcdttimika@gmail.com</p>
+            </div>
+            <div class="footer-section">
+                <h3>Info Pegawai</h3>
+                <a href="#kontak">FX Dewo Kusumo Adriyanto</a>
+                <a href="#kontak">Dary Rafif Firdaus</a>
+                <a href="#kontak">Ignatius Hendisto Ferry Fernanda</a>
+                <a href="#kontak">Aji Aristya Pamungkas</a>
+                <a href="#kontak">Alfin Jadid</a>
+            </div>
+            <div class="footer-section">
+                <h3>Media Sosial</h3>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Pelayanan Kepabeanan dan Cukai dan Dukungan Teknis • Bea Cukai Timika</p>
+        </div>
+    </footer>
+
+    <!-- Disesuaikan path public/js/app.js -->
+    <script src="public/js/app.js"></script>
+    <script>
+        // Fungsi untuk langsung membuka halaman dashboard di folder Kinerja tanpa iframe
+        function openDashboard(jenis) {
+            window.location.href = `Kinerja/dashboard-${jenis}.html`;
+        }
+
+        // URL CSV dari 4 bidang
+        const urlUmkm = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJIvGZ2s51srep-cgziH6wXTYPKRnMMsm86s3CNgoUAbwmCt6sjHEQRHwFH4TxcMWmCI59V4oakEgh/pub?gid=677245408&single=true&output=csv';
+        const urlCukai = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJIvGZ2s51srep-cgziH6wXTYPKRnMMsm86s3CNgoUAbwmCt6sjHEQRHwFH4TxcMWmCI59V4oakEgh/pub?gid=1670810491&single=true&output=csv';
+        const urlPely = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJIvGZ2s51srep-cgziH6wXTYPKRnMMsm86s3CNgoUAbwmCt6sjHEQRHwFH4TxcMWmCI59V4oakEgh/pub?gid=350556236&single=true&output=csv';
+        const urlTik  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJIvGZ2s51srep-cgziH6wXTYPKRnMMsm86s3CNgoUAbwmCt6sjHEQRHwFH4TxcMWmCI59V4oakEgh/pub?gid=1127511720&single=true&output=csv';
+
+        // 1. Fetch UMKM
+        Papa.parse(urlUmkm, {
+            download: true, header: false, skipEmptyLines: true,
+            complete: function(res) {
+                let rows = res.data.slice(1);
+                document.getElementById('umkmBerat').innerText = rows.length + ' Dokumen';
+                document.getElementById('umkmDevisa').innerText = 'Tersedia';
+                document.getElementById('umkmNegara').innerText = 'Terdata';
+            }
+        });
+
+        // 2. Fetch Cukai
+        Papa.parse(urlCukai, {
+            download: true, header: false, skipEmptyLines: true,
+            complete: function(res) {
+                let rows = res.data.slice(1);
+                let aman = 0, perhatian = 0;
+                rows.forEach(r => {
+                    let tglJatuhTempo = r[17];
+                    if(tglJatuhTempo) aman++; else perhatian++;
+                });
+                document.getElementById('cukaiTotal').innerText = rows.length + ' Entitas';
+                document.getElementById('cukaiAman').innerText = aman;
+                document.getElementById('cukaiPerhatian').innerText = perhatian;
+            }
+        });
+
+        // 3. Fetch Pelayanan Kepabeanan
+        Papa.parse(urlPely, {
+            download: true, header: false, skipEmptyLines: true,
+            complete: function(res) {
+                let rows = res.data.slice(3);
+                let pib = 0, peb = 0, hijau = 0, merah = 0;
+                rows.forEach(r => {
+                    let dok = r[1] ? r[1].trim().toUpperCase() : '';
+                    let jlr = r[5] ? r[5].trim().toUpperCase() : '';
+                    if(dok === 'PIB') pib++;
+                    if(dok === 'PEB') peb++;
+                    if(jlr === 'HIJAU') hijau++;
+                    if(jlr === 'MERAH') merah++;
+                });
+                document.getElementById('pibTotal').innerText = pib;
+                document.getElementById('pebTotal').innerText = peb;
+                document.getElementById('pibJalur').innerText = `${hijau} H / ${merah} M`;
+            }
+        });
+
+        // 4. Fetch TIK
+        Papa.parse(urlTik, {
+            download: true, header: false, skipEmptyLines: true,
+            complete: function(res) {
+                let rows = res.data.slice(2);
+                let selesai = 0, proses = 0;
+                rows.forEach(r => {
+                    let status = r[4] ? r[4].trim().toUpperCase() : '';
+                    if(status === 'SELESAI') selesai++;
+                    else if(status.includes('PROGRESS')) proses++;
+                });
+                document.getElementById('tikTotal').innerText = rows.length + ' Aduan';
+                document.getElementById('tikSelesai').innerText = selesai;
+                document.getElementById('tikProses').innerText = proses;
+            }
+        });
+    </script>
+</body>
+</html>

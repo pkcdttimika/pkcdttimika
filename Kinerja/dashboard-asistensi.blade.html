@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Efektivitas Asistensi UMKM Berorientasi Ekspor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js & PapaParse -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #003F87; 
+            --secondary-blue: #1C5AA0; 
+            --light-blue: #3A7BD5; 
+            --orange: #F7931E; 
+            --bg-color: #f4f7f6;
+            --white: #FFFFFF;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .dashboard-container { max-width: 1200px; margin: 0 auto; }
+        .dashboard-title { text-align: center; color: var(--primary-blue); font-size: 2rem; font-weight: 800; margin-bottom: 20px; }
+        
+        /* Tombol Perbandingan Utama */
+        .btn-compare {
+            background-color: var(--orange);
+            color: var(--white);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-compare:hover { background-color: #d87c14; }
+
+        /* Filter Box */
+        .filter-box {
+            background: var(--white);
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid var(--secondary-blue);
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .filter-box h3 { margin: 0; color: var(--primary-blue); font-size: 1.1rem; }
+        .filter-options { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        
+        /* Custom Dropdown Checkbox Style */
+        .custom-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-btn {
+            background: var(--white);
+            border: 1px solid #ccc;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 140px;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        .dropdown-btn:hover { border-color: var(--secondary-blue); }
+        .dropdown-menu-box {
+            display: none;
+            position: absolute;
+            background: var(--white);
+            min-width: 180px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            z-index: 100;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .dropdown-menu-box.show { display: block; }
+        .dropdown-item-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: #333;
+            font-weight: 500;
+            border-radius: 4px;
+        }
+        .dropdown-item-label:hover { background-color: #f0f4f8; }
+
+        /* --- Efek Mengembang untuk Card Box --- */
+        .card-box {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 2px solid var(--secondary-blue);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .card-box:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0, 63, 135, 0.15);
+        }
+
+        .card-title { text-align: center; color: var(--primary-blue); font-size: 1.2rem; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; }
+
+        /* Grid untuk 2 Grafik Tambahan di Bawah */
+        .dual-chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        /* Rekapitulasi Grid Utama (Dashboard Standar) */
+        .rekap-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .rekap-card {
+            background: #f9fbfd;
+            border: 2px solid var(--orange);
+            border-radius: 10px;
+            text-align: center;
+            padding: 12px 10px; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .rekap-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(247, 147, 30, 0.2);
+        }
+        .rekap-card span { font-size: 0.8rem; color: #555; font-weight: 700; text-transform: uppercase; } 
+        .rekap-card h2 { margin: 5px 0 0 0; color: var(--primary-blue); font-size: 1.4rem; } 
+
+        /* --- Kustomisasi Grid Rekapitulasi Perbandingan (Sama Besar & Muat) --- */
+        .compare-rekap-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .compare-rekap-card {
+            background: #f9fbfd;
+            border: 2px solid var(--orange);
+            border-radius: 8px;
+            text-align: center;
+            padding: 10px 4px; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .compare-rekap-card:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 5px 15px rgba(247, 147, 30, 0.2);
+        }
+        .compare-rekap-card span { 
+            font-size: 0.7rem; 
+            color: #555; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            display: block;
+        } 
+        .compare-rekap-card h2 { 
+            margin: 5px 0 0 0; 
+            color: var(--primary-blue); 
+            font-size: 0.85rem; 
+            line-height: 1.3;
+            word-break: break-word; 
+        }
+
+        /* --- Style Filter Box Khusus di Mode Perbandingan --- */
+        .compare-filter-box {
+            background: #f9fbfd;
+            padding: 12px 18px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid var(--secondary-blue);
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* --- Style Card Khusus Negara Tujuan di Perbandingan --- */
+        .compare-country-card {
+            background: #f9fbfd;
+            border: 2px solid var(--secondary-blue);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .compare-country-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 63, 135, 0.12);
+        }
+
+        /* Style Tabel UMKM dengan Pojok Tumpul */
+        .table-responsive { 
+            overflow-x: auto; 
+            border-radius: 8px; 
+            border: 1px solid #d1d9e6;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #d1d9e6;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+        .data-table th {
+            background-color: var(--primary-blue);
+            color: var(--white);
+            font-weight: 600;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .data-table tr:nth-child(even) { background-color: #f9fbfd; }
+        .data-table tr:hover { background-color: #f1f5f9; }
+        .data-table td.text-center { text-align: center; }
+
+        /* === STYLING HALAMAN PERBANDINGAN & ANIMASI FADE (0.5s) === */
+        #mainDashboard, #compareDashboard {
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .compare-container {
+            display: none; /* Default tersembunyi */
+        }
+        .compare-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--white);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 2px solid var(--primary-blue);
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .compare-header-bar h2 { margin: 0; color: var(--primary-blue); font-size: 1.5rem; }
+        .btn-close {
+            background-color: #dc3545;
+            color: var(--white);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-close:hover { background-color: #c82333; }
+
+        .compare-grid-split {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        @media(max-width: 992px) {
+            .dual-chart-grid, .compare-grid-split { grid-template-columns: 1fr; }
+        }
+        @media(max-width: 768px) {
+            .rekap-grid { grid-template-columns: 1fr; }
+            .filter-box { flex-direction: column; align-items: flex-start; }
+            .filter-options { flex-direction: column; align-items: stretch; width: 100%; }
+            .custom-dropdown { width: 100%; }
+            .dropdown-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <h1 class="dashboard-title">Efektivitas Asistensi UMKM Berorientasi Ekspor</h1>
+
+        <!-- ==================== TAMPILAN UTAMA (MAIN DASHBOARD) ==================== -->
+        <div id="mainDashboard">
+            
+            <!-- Baris Filter Waktu & Tombol Banding -->
+            <div class="filter-box">
+                <h3>Filter Data Berdasarkan Waktu</h3>
+                <div class="filter-options">
+                    
+                    <!-- Tombol Bandingkan Periode di dalam Filter Box -->
+                    <button class="btn-compare" onclick="openComparison()">
+                        <i class="fas fa-columns"></i> Bandingkan Periode
+                    </button>
+
+                    <!-- Dropdown Tahun -->
+                    <div class="custom-dropdown">
+                        <div class="dropdown-btn" onclick="toggleDropdown('tahun')">
+                            <span id="tahunBtnText">Pilih Tahun</span>
+                            <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                        </div>
+                        <div class="dropdown-menu-box" id="tahunDropdownMenu">
+                            <label class="dropdown-item-label"><input type="checkbox" name="filterTahun" value="2026" checked onchange="onYearChange()"> 2026</label>
+                            <label class="dropdown-item-label"><input type="checkbox" name="filterTahun" value="2025" checked onchange="onYearChange()"> 2025</label>
+                            <label class="dropdown-item-label"><input type="checkbox" name="filterTahun" value="2024" checked onchange="onYearChange()"> 2024</label>
+                            <label class="dropdown-item-label"><input type="checkbox" name="filterTahun" value="2023" checked onchange="onYearChange()"> 2023</label>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Bulan -->
+                    <div class="custom-dropdown">
+                        <div class="dropdown-btn" onclick="toggleDropdown('bulan')">
+                            <span id="bulanBtnText">Pilih Bulan</span>
+                            <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                        </div>
+                        <div class="dropdown-menu-box" id="bulanDropdownMenu">
+                            <!-- Opsi bulan terisi otomatis -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Grafik Utama: Tren Kegiatan Ekspor UMKM (Dual Axis) -->
+            <div class="card-box">
+                <div class="card-title">Tren Kegiatan Ekspor UMKM per Bulan (Dokumen, Berat, & Devisa)</div>
+                <div style="position: relative; height:380px; width:100%">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Dua Grafik Khusus di Bawah Tren Utama -->
+            <div class="dual-chart-grid">
+                <div class="card-box" style="margin-bottom: 0;">
+                    <div class="card-title">Tren PT Harapan Nurdiana Jaya (Gabungan UD & PT)</div>
+                    <div style="position: relative; height:300px; width:100%">
+                        <canvas id="harapanChart"></canvas>
+                    </div>
+                </div>
+                <div class="card-box" style="margin-bottom: 0;">
+                    <div class="card-title">Tren PT Hokky Laut Perkasa</div>
+                    <div style="position: relative; height:300px; width:100%">
+                        <canvas id="hokkyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kotak Rekapitulasi Keseluruhan -->
+            <div class="card-box" style="margin-top: 25px;">
+                <div class="card-title">Rekapitulasi Keseluruhan</div>
+                <div class="rekap-grid">
+                    <div class="rekap-card">
+                        <span>Jumlah Dokumen</span>
+                        <h2 id="valDokumen">0</h2>
+                    </div>
+                    <div class="rekap-card">
+                        <span>Total Berat (Kg)</span>
+                        <h2 id="valBerat">0,00</h2>
+                    </div>
+                    <div class="rekap-card">
+                        <span>Total Devisa (IDR)</span>
+                        <h2 id="valDevisa">Rp0</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grafik Negara Tujuan Ekspor -->
+            <div class="card-box">
+                <div class="card-title">Negara Tujuan Ekspor</div>
+                <div style="position: relative; height:200px; width:100%">
+                    <canvas id="countryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Tabel Daftar UMKM Binaan -->
+            <div class="card-box">
+                <div class="card-title">Daftar UMKM Binaan</div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th width="5%" class="text-center">No</th>
+                                <th width="35%">Nama Perusahaan</th>
+                                <th width="30%">Komoditas</th>
+                                <th width="30%">Kategori</th>
+                            </tr>
+                        </thead>
+                        <tbody id="umkmTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div> <!-- End of #mainDashboard -->
+
+
+        <!-- ==================== TAMPILAN PERBANDINGAN (COMPARE VIEW) ==================== -->
+        <div id="compareDashboard" class="compare-container">
+            <div class="compare-header-bar">
+                <h2><i class="fas fa-columns"></i> Mode Perbandingan Periode Kinerja</h2>
+                <button class="btn-close" onclick="closeComparison()"><i class="fas fa-times"></i> Tutup</button>
+            </div>
+
+            <div class="compare-grid-split">
+                
+                <!-- SISI KIRI -->
+                <div class="card-box">
+                    <!-- Filter Box Sisi Kiri (Satu Card Inline) -->
+                    <div class="compare-filter-box">
+                        <h4 style="margin: 0; color: var(--primary-blue); font-size: 1rem; text-transform: uppercase;">Periode Sisi Kiri</h4>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <div class="custom-dropdown">
+                                <div class="dropdown-btn" onclick="toggleCompareDropdown('left', 'tahun')" style="min-width: 130px; padding: 6px 10px; font-size: 0.9rem;">
+                                    <span id="leftTahunBtnText">Pilih Tahun</span> <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                                </div>
+                                <div class="dropdown-menu-box" id="leftTahunMenu">
+                                    <label class="dropdown-item-label"><input type="checkbox" value="2026" checked onchange="processCompare()"> 2026</label>
+                                    <label class="dropdown-item-label"><input type="checkbox" value="2025" checked onchange="processCompare()"> 2025</label>
+                                    <label class="dropdown-item-label"><input type="checkbox" value="2024" checked onchange="processCompare()"> 2024</label>
+                                    <label class="dropdown-item-label"><input type="checkbox" value="2023" checked onchange="processCompare()"> 2023</label>
+                                </div>
+                            </div>
+                            <div class="custom-dropdown">
+                                <div class="dropdown-btn" onclick="toggleCompareDropdown('left', 'bulan')" style="min-width: 130px; padding: 6px 10px; font-size: 0.9rem;">
+                                    <span id="leftBulanBtnText">Pilih Bulan</span> <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                                </div>
+                                <div class="dropdown-menu-box" id="leftBulanMenu">
+                                    <!-- Diisi dinamis -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rekap Kiri -->
+                    <div class="compare-rekap-grid" style="margin-bottom: 15px;">
+                        <div class="compare-rekap-card">
+                            <span>Dokumen</span>
+                            <h2 id="leftValDokumen">0</h2>
+                        </div>
+                        <div class="compare-rekap-card">
+                            <span>Berat (Kg)</span>
+                            <h2 id="leftValBerat">0,00</h2>
+                        </div>
+                        <div class="compare-rekap-card">
+                            <span>Devisa (Rp)</span>
+                            <h2 id="leftValDevisa">Rp0</h2>
+                        </div>
+                    </div>
+
+                    <!-- Grafik Negara Kiri (Dibungkus Card Tersendiri) -->
+                    <div class="compare-country-card">
+                        <div class="card-title" style="font-size: 1rem; margin-bottom: 10px;">Negara Tujuan (Kiri)</div>
+                        <div style="position: relative; height: 230px; width: 100%;">
+                            <canvas id="countryChartLeft"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SISI KANAN -->
+                <div class="card-box">
+                    <!-- Filter Box Sisi Kanan (Satu Card Inline) -->
+                    <div class="compare-filter-box">
+                        <h4 style="margin: 0; color: var(--primary-blue); font-size: 1rem; text-transform: uppercase;">Periode Sisi Kanan</h4>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <div class="custom-dropdown">
+                                <div class="dropdown-btn" onclick="toggleCompareDropdown('right', 'tahun')" style="min-width: 130px; padding: 6px 10px; font-size: 0.9rem;">
+                                    <span id="rightTahunBtnText">Pilih Tahun</span> <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                                </div>
+                                <div class="dropdown-menu-box" id="rightTahunMenu">
+                                    <label class="dropdown-item-label"><input type="checkbox" value="2026" checked onchange="processCompare()"> 2026</label>
+                                    <label class="dropdown-item-label"><input type="checkbox" value="2025" checked onchange="processCompare()"> 2025</label>
+                                    <label class="dropdown-item-label"><input type="checkbox" value="2024" checked onchange="processCompare()"> 2024</label>
+                                    <label class="dropdown-item-label"><input type="checkbox" value="2023" checked onchange="processCompare()"> 2023</label>
+                                </div>
+                            </div>
+                            <div class="custom-dropdown">
+                                <div class="dropdown-btn" onclick="toggleCompareDropdown('right', 'bulan')" style="min-width: 130px; padding: 6px 10px; font-size: 0.9rem;">
+                                    <span id="rightBulanBtnText">Pilih Bulan</span> <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                                </div>
+                                <div class="dropdown-menu-box" id="rightBulanMenu">
+                                    <!-- Diisi dinamis -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rekap Kanan -->
+                    <div class="compare-rekap-grid" style="margin-bottom: 15px;">
+                        <div class="compare-rekap-card">
+                            <span>Dokumen</span>
+                            <h2 id="rightValDokumen">0</h2>
+                        </div>
+                        <div class="compare-rekap-card">
+                            <span>Berat (Kg)</span>
+                            <h2 id="rightValBerat">0,00</h2>
+                        </div>
+                        <div class="compare-rekap-card">
+                            <span>Devisa (Rp)</span>
+                            <h2 id="rightValDevisa">Rp0</h2>
+                        </div>
+                    </div>
+
+                    <!-- Grafik Negara Kanan (Dibungkus Card Tersendiri) -->
+                    <div class="compare-country-card">
+                        <div class="card-title" style="font-size: 1rem; margin-bottom: 10px;">Negara Tujuan (Kanan)</div>
+                        <div style="position: relative; height: 230px; width: 100%;">
+                            <canvas id="countryChartRight"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div> <!-- End of #compareDashboard -->
+
+    </div>
+
+    <script>
+        let globalRawData = [];
+        let umkmMasterData = [];
+
+        // Kamus Bulan Bahasa Indonesia
+        const monthNames = {
+            '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+            '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+            '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
+        };
+
+        // Inisialisasi Chart.js Utama dengan Dual Sumbu Y
+        const ctxMain = document.getElementById('mainChart').getContext('2d');
+        const mainChart = new Chart(ctxMain, {
+            type: 'bar',
+            data: {
+                labels: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+                datasets: [
+                    { label: 'Jumlah Dokumen', data: [], backgroundColor: '#003F87', borderWidth: 1, yAxisID: 'y' },
+                    { label: 'Berat Netto (Ton)', data: [], backgroundColor: '#1C5AA0', borderWidth: 1, yAxisID: 'y' },
+                    { label: 'Devisa (Juta Rp)', data: [], backgroundColor: '#F7931E', borderWidth: 1, yAxisID: 'y1' }
+                ]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                scales: { 
+                    y: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Jumlah Dokumen & Berat (Ton)' } },
+                    y1: { type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Devisa (Juta Rp)' } }
+                } 
+            }
+        });
+
+        const subChartOptions = {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                y: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Jumlah Dokumen & Berat (Ton)' } },
+                y1: { type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Devisa (Juta Rp)' } }
+            }
+        };
+
+        const harapanChart = new Chart(document.getElementById('harapanChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+                datasets: [
+                    { label: 'Dokumen', data: [], backgroundColor: '#003F87', borderWidth: 1, yAxisID: 'y' },
+                    { label: 'Berat (Ton)', data: [], backgroundColor: '#1C5AA0', borderWidth: 1, yAxisID: 'y' },
+                    { label: 'Devisa (Juta Rp)', data: [], backgroundColor: '#F7931E', borderWidth: 1, yAxisID: 'y1' }
+                ]
+            },
+            options: subChartOptions
+        });
+
+        const hokkyChart = new Chart(document.getElementById('hokkyChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+                datasets: [
+                    { label: 'Dokumen', data: [], backgroundColor: '#003F87', borderWidth: 1, yAxisID: 'y' },
+                    { label: 'Berat (Ton)', data: [], backgroundColor: '#1C5AA0', borderWidth: 1, yAxisID: 'y' },
+                    { label: 'Devisa (Juta Rp)', data: [], backgroundColor: '#F7931E', borderWidth: 1, yAxisID: 'y1' }
+                ]
+            },
+            options: subChartOptions
+        });
+
+        const countryChart = new Chart(document.getElementById('countryChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Jumlah Dokumen', data: [], backgroundColor: [] }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } } }
+        });
+
+        // Chart untuk Perbandingan Sisi Kiri & Kanan
+        const countryChartLeft = new Chart(document.getElementById('countryChartLeft').getContext('2d'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Dokumen', data: [], backgroundColor: [] }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } } }
+        });
+
+        const countryChartRight = new Chart(document.getElementById('countryChartRight').getContext('2d'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Dokumen', data: [], backgroundColor: [] }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } } }
+        });
+
+        const publicCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJIvGZ2s51srep-cgziH6wXTYPKRnMMsm86s3CNgoUAbwmCt6sjHEQRHwFH4TxcMWmCI59V4oakEgh/pub?gid=677245408&single=true&output=csv';
+
+        // Fungsi buka/tutup menu dropdown utama
+        function toggleDropdown(type) {
+            const tahunMenu = document.getElementById('tahunDropdownMenu');
+            const bulanMenu = document.getElementById('bulanDropdownMenu');
+            if (type === 'tahun') {
+                tahunMenu.classList.toggle('show');
+                bulanMenu.classList.remove('show');
+            } else {
+                bulanMenu.classList.toggle('show');
+                tahunMenu.classList.remove('show');
+            }
+        }
+
+        // Fungsi buka/tutup menu dropdown perbandingan (Kiri & Kanan)
+        function toggleCompareDropdown(side, type) {
+            const tMenu = document.getElementById(side + 'TahunMenu');
+            const bMenu = document.getElementById(side + 'BulanMenu');
+            if (type === 'tahun') {
+                tMenu.classList.toggle('show');
+                bMenu.classList.remove('show');
+            } else {
+                bMenu.classList.toggle('show');
+                tMenu.classList.remove('show');
+            }
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('.custom-dropdown')) {
+                document.getElementById('tahunDropdownMenu')?.classList.remove('show');
+                document.getElementById('bulanDropdownMenu')?.classList.remove('show');
+                document.getElementById('leftTahunMenu')?.classList.remove('show');
+                document.getElementById('leftBulanMenu')?.classList.remove('show');
+                document.getElementById('rightTahunMenu')?.classList.remove('show');
+                document.getElementById('rightBulanMenu')?.classList.remove('show');
+            }
+        }
+
+        function parseIndoDate(tglStr) {
+            if (!tglStr) return { tahun: '', bulan: '' };
+            let parts = String(tglStr).trim().toLowerCase().split(/\s+/);
+            if (parts.length === 3) {
+                let bulanStr = parts[1];
+                let tahun = parts[2];
+                let directBulanMap = {
+                    'januari': '01', 'februari': '02', 'maret': '03', 'april': '04',
+                    'mei': '05', 'juni': '06', 'juli': '07', 'agustus': '08',
+                    'september': '09', 'oktober': '10', 'november': '11', 'desember': '12'
+                };
+                let mappedBulan = directBulanMap[bulanStr] || '';
+                if (tahun.length === 4 && mappedBulan) return { tahun, bulan: mappedBulan };
+            }
+            return { tahun: '', bulan: '' };
+        }
+
+        function fetchSheetData() {
+            Papa.parse(publicCsvUrl, {
+                download: true, header: false, skipEmptyLines: true,
+                complete: function(results) {
+                    const rawRows = results.data;
+                    let cleanedData = [];
+                    umkmMasterData = [];
+                    
+                    for (let i = 0; i < rawRows.length; i++) {
+                        let row = rawRows[i];
+                        let colM = row[12] !== undefined ? String(row[12]).trim() : '';
+                        let colN = row[13] !== undefined ? String(row[13]).trim() : '';
+                        let colO = row[14] !== undefined ? String(row[14]).trim() : '';
+                        let colP = row[15] !== undefined ? String(row[15]).trim() : '';
+
+                        if (colM || colN || colO || colP) {
+                            let checkText = (colM + colN).toUpperCase();
+                            let isSheetHeader = checkText.includes('DAFTAR UMKM') || checkText.includes('KOLOM') || colM.toUpperCase() === 'NO' || colN.toUpperCase() === 'NAMA PERUSAHAAN';
+                            if (!isSheetHeader) umkmMasterData.push([colM, colN, colO, colP]);
+                        }
+
+                        if (!row[2]) continue;
+                        let parsedDate = parseIndoDate(row[2]);
+                        if (!parsedDate.tahun) continue;
+
+                        let penggunaJasa = row[3] ? String(row[3]).trim() : ''; 
+                        let negara = row[5] ? String(row[5]).trim() : 'Lainnya';
+                        let devisaIdr = row[8];  
+                        let beratNetto = row[9]; 
+
+                        let cleanDevisa = 0;
+                        if (devisaIdr !== undefined && devisaIdr !== null) {
+                            let strDev = String(devisaIdr).trim().replace(/[^0-9,-]+/g, '').replace(/\./g, '').replace(',', '.');
+                            cleanDevisa = parseFloat(strDev) || 0;
+                        }
+
+                        let valKg = 0;
+                        if (beratNetto !== undefined && beratNetto !== null) {
+                            let strBerat = String(beratNetto).trim().replace(/\./g, '').replace(',', '.');
+                            valKg = parseFloat(strBerat) || 0;
+                        }
+
+                        cleanedData.push({
+                            tahun: parsedDate.tahun, bulan: parsedDate.bulan,
+                            penggunaJasa: penggunaJasa, negara: negara,
+                            devisa: cleanDevisa, beratKg: valKg, beratTon: valKg / 1000   
+                        });
+                    }
+
+                    globalRawData = cleanedData;
+                    renderUmkmMasterTable();
+                    updateMonthCheckboxes();
+                    updateCompareMonthCheckboxes('left');
+                    updateCompareMonthCheckboxes('right');
+                    processAndRender();
+                    processCompare();
+                }
+            });
+        }
+
+        function renderUmkmMasterTable() {
+            const tbody = document.getElementById('umkmTableBody');
+            tbody.innerHTML = '';
+            if (umkmMasterData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color: #666; font-style: italic;">Tidak ada data UMKM Binaan yang tersedia</td></tr>`;
+                return;
+            }
+            umkmMasterData.forEach(item => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td class="text-center">${item[0]}</td><td style="font-weight: 600; color: var(--primary-blue);">${item[1]}</td><td>${item[2]}</td><td>${item[3]}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getSelectedYears() {
+            return Array.from(document.querySelectorAll('#tahunDropdownMenu input[type="checkbox"]:checked')).map(cb => cb.value);
+        }
+        function getSelectedMonths() {
+            return Array.from(document.querySelectorAll('#bulanDropdownMenu input[type="checkbox"]:checked')).map(cb => cb.value);
+        }
+
+        function updateMonthCheckboxes() {
+            const bulanMenu = document.getElementById('bulanDropdownMenu');
+            const previouslyChecked = getSelectedMonths();
+            bulanMenu.innerHTML = '';
+            let selectedYears = getSelectedYears();
+            let availableMonths = new Set();
+            globalRawData.forEach(row => { if (selectedYears.includes(row.tahun)) availableMonths.add(row.bulan); });
+            let sortedMonths = Array.from(availableMonths).sort();
+            sortedMonths.forEach(m => {
+                let isChecked = previouslyChecked.length === 0 || previouslyChecked.includes(m);
+                bulanMenu.innerHTML += `<label class="dropdown-item-label"><input type="checkbox" name="filterBulan" value="${m}" ${isChecked ? 'checked' : ''} onchange="filterData()"> ${monthNames[m] || m}</label>`;
+            });
+            updateButtonLabels();
+        }
+
+        function updateButtonLabels() {
+            let selectedYears = getSelectedYears();
+            document.getElementById('tahunBtnText').textContent = selectedYears.length === 0 ? 'Pilih Tahun' : (selectedYears.length === 4 ? 'Semua Tahun' : 'Tahun: ' + selectedYears.join(', '));
+            let selectedMonths = getSelectedMonths();
+            let totalBulan = document.querySelectorAll('#bulanDropdownMenu input[type="checkbox"]').length;
+            document.getElementById('bulanBtnText').textContent = (selectedMonths.length === 0 || selectedMonths.length === totalBulan) ? 'Semua Bulan' : 'Bulan: ' + selectedMonths.map(m => (monthNames[m] || m).substring(0, 3)).join(', ');
+        }
+
+        function onYearChange() { updateMonthCheckboxes(); filterData(); }
+        function filterData() { updateButtonLabels(); processAndRender(); }
+
+        // --- MANAJEMEN CHECKBOX PERBANDINGAN (KIRI & KANAN) ---
+        function getCompareYears(side) {
+            return Array.from(document.querySelectorAll(`#${side}TahunMenu input[type="checkbox"]:checked`)).map(cb => cb.value);
+        }
+        function getCompareMonths(side) {
+            return Array.from(document.querySelectorAll(`#${side}BulanMenu input[type="checkbox"]:checked`)).map(cb => cb.value);
+        }
+
+        function updateCompareMonthCheckboxes(side) {
+            const menu = document.getElementById(side + 'BulanMenu');
+            const prev = getCompareMonths(side);
+            menu.innerHTML = '';
+            let sYears = getCompareYears(side);
+            let aMonths = new Set();
+            globalRawData.forEach(row => { if (sYears.includes(row.tahun)) aMonths.add(row.bulan); });
+            let sorted = Array.from(aMonths).sort();
+            sorted.forEach(m => {
+                let checked = prev.length === 0 || prev.includes(m);
+                menu.innerHTML += `<label class="dropdown-item-label"><input type="checkbox" value="${m}" ${checked ? 'checked' : ''} onchange="processCompare()"> ${monthNames[m] || m}</label>`;
+            });
+            updateCompareButtonLabels(side);
+        }
+
+        function updateCompareButtonLabels(side) {
+            let sYears = getCompareYears(side);
+            document.getElementById(side + 'TahunBtnText').textContent = sYears.length === 0 ? 'Pilih Tahun' : (sYears.length === 4 ? 'Semua Tahun' : 'Tahun: ' + sYears.join(', '));
+            let sMonths = getCompareMonths(side);
+            let totalB = document.querySelectorAll(`#${side}BulanMenu input[type="checkbox"]`).length;
+            document.getElementById(side + 'BulanBtnText').textContent = (sMonths.length === 0 || sMonths.length === totalB) ? 'Semua Bulan' : 'Bulan: ' + sMonths.map(m => (monthNames[m] || m).substring(0, 3)).join(', ');
+        }
+
+        // Transisi Antar Tampilan dengan Animasi Render Fade (0.5 Detik)
+        function openComparison() {
+            const main = document.getElementById('mainDashboard');
+            const compare = document.getElementById('compareDashboard');
+
+            main.style.opacity = '0';
+            setTimeout(() => {
+                main.style.display = 'none';
+                compare.style.display = 'block';
+                compare.style.opacity = '0';
+                setTimeout(() => {
+                    compare.style.opacity = '1';
+                }, 50);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                processCompare();
+            }, 500); // 500ms = 0.5 detik
+        }
+
+        function closeComparison() {
+            const main = document.getElementById('mainDashboard');
+            const compare = document.getElementById('compareDashboard');
+
+            compare.style.opacity = '0';
+            setTimeout(() => {
+                compare.style.display = 'none';
+                main.style.display = 'block';
+                main.style.opacity = '0';
+                setTimeout(() => {
+                    main.style.opacity = '1';
+                }, 50);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 500); // 500ms = 0.5 detik
+        }
+
+        // Proses Data Perbandingan Sisi Kiri & Kanan
+        function processCompareSide(side) {
+            let years = getCompareYears(side);
+            let months = getCompareMonths(side);
+            updateCompareButtonLabels(side);
+
+            let totalDoc = 0, totalBerat = 0, totalDevisa = 0;
+            let countryCounts = {};
+
+            globalRawData.forEach(row => {
+                if (!years.includes(row.tahun)) return;
+                if (!months.includes(row.bulan)) return;
+
+                totalDoc++;
+                totalBerat += row.beratKg;
+                totalDevisa += row.devisa;
+                countryCounts[row.negara] = (countryCounts[row.negara] || 0) + 1;
+            });
+
+            document.getElementById(side + 'ValDokumen').innerText = totalDoc.toLocaleString('id-ID');
+            document.getElementById(side + 'ValBerat').innerText = totalBerat.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById(side + 'ValDevisa').innerText = 'Rp ' + totalDevisa.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            return countryCounts;
+        }
+
+        function processCompare() {
+            // Sisi Kiri
+            updateCompareMonthCheckboxes('left');
+            let cLeft = processCompareSide('left');
+            let labelsLeft = Object.keys(cLeft);
+            countryChartLeft.data.labels = labelsLeft;
+            countryChartLeft.data.datasets[0].data = Object.values(cLeft);
+            countryChartLeft.data.datasets[0].backgroundColor = labelsLeft.map(c => c.toLowerCase().includes('malaysia') ? '#003F87' : (c.toLowerCase().includes('singapur') ? '#F7931E' : '#3A7BD5'));
+            countryChartLeft.update();
+
+            // Sisi Kanan
+            updateCompareMonthCheckboxes('right');
+            let cRight = processCompareSide('right');
+            let labelsRight = Object.keys(cRight);
+            countryChartRight.data.labels = labelsRight;
+            countryChartRight.data.datasets[0].data = Object.values(cRight);
+            countryChartRight.data.datasets[0].backgroundColor = labelsRight.map(c => c.toLowerCase().includes('malaysia') ? '#003F87' : (c.toLowerCase().includes('singapur') ? '#F7931E' : '#3A7BD5'));
+            countryChartRight.update();
+        }
+
+        // Proses Utama Dashboard Standar
+        function processAndRender() {
+            const selectedYears = getSelectedYears();
+            const selectedMonths = getSelectedMonths();
+
+            let monthlyDocs = new Array(12).fill(0);
+            let monthlyBerat = new Array(12).fill(0); 
+            let monthlyDevisa = new Array(12).fill(0);
+
+            let harapanDocs = new Array(12).fill(0);
+            let harapanBerat = new Array(12).fill(0);
+            let harapanDevisa = new Array(12).fill(0);
+
+            let hokkyDocs = new Array(12).fill(0);
+            let hokkyBerat = new Array(12).fill(0);
+            let hokkyDevisa = new Array(12).fill(0);
+            
+            let countryCounts = {};
+            let totalDoc = 0;
+            let totalBeratKg = 0; 
+            let totalDevisa = 0;
+
+            globalRawData.forEach(row => {
+                if (!selectedYears.includes(row.tahun)) return;
+                if (!selectedMonths.includes(row.bulan)) return;
+
+                let pengurusUpper = row.penggunaJasa.toUpperCase();
+                let isUtamaSentosa = pengurusUpper.includes('UTAMA SENTOSA');
+
+                totalDoc++;
+                totalBeratKg += row.beratKg; 
+                totalDevisa += row.devisa;
+
+                let monthIndex = parseInt(row.bulan, 10) - 1;
+                if (monthIndex >= 0 && monthIndex < 12) {
+                    monthlyDocs[monthIndex]++;
+                    monthlyBerat[monthIndex] += row.beratTon; 
+                    monthlyDevisa[monthIndex] += (row.devisa / 1000000); 
+
+                    if (!isUtamaSentosa) {
+                        if (pengurusUpper.includes('HARAPAN NURDIANA')) {
+                            harapanDocs[monthIndex]++;
+                            harapanBerat[monthIndex] += row.beratTon;
+                            harapanDevisa[monthIndex] += (row.devisa / 1000000);
+                        }
+                        
+                        if (pengurusUpper.includes('HOKKY') || pengurusUpper.includes('HOKY')) {
+                            hokkyDocs[monthIndex]++;
+                            hokkyBerat[monthIndex] += row.beratTon;
+                            hokkyDevisa[monthIndex] += (row.devisa / 1000000);
+                        }
+                    }
+                }
+
+                countryCounts[row.negara] = (countryCounts[row.negara] || 0) + 1;
+            });
+
+            document.getElementById('valDokumen').innerText = totalDoc.toLocaleString('id-ID');
+            document.getElementById('valBerat').innerText = totalBeratKg.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('valDevisa').innerText = 'Rp ' + totalDevisa.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            mainChart.data.datasets[0].data = monthlyDocs;
+            mainChart.data.datasets[1].data = monthlyBerat;
+            mainChart.data.datasets[2].data = monthlyDevisa;
+            mainChart.update();
+
+            harapanChart.data.datasets[0].data = harapanDocs;
+            harapanChart.data.datasets[1].data = harapanBerat;
+            harapanChart.data.datasets[2].data = harapanDevisa;
+            harapanChart.update();
+
+            hokkyChart.data.datasets[0].data = hokkyDocs;
+            hokkyChart.data.datasets[1].data = hokkyBerat;
+            hokkyChart.data.datasets[2].data = hokkyDevisa;
+            hokkyChart.update();
+
+            const countryLabels = Object.keys(countryCounts);
+            const fallbackColors = ['#3A7BD5', '#2E8B57', '#9370DB', '#FF6347', '#4682B4'];
+            
+            const countryColors = countryLabels.map((country, index) => {
+                let name = country.toLowerCase();
+                if (name.includes('malaysia')) return '#003F87';      
+                if (name.includes('singapura') || name.includes('singapore')) return '#F7931E'; 
+                return fallbackColors[index % fallbackColors.length]; 
+            });
+
+            countryChart.data.labels = countryLabels;
+            countryChart.data.datasets[0].data = Object.values(countryCounts);
+            countryChart.data.datasets[0].backgroundColor = countryColors;
+            countryChart.update();
+        }
+
+        fetchSheetData();
+        setInterval(fetchSheetData, 300000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengelolaan Layanan TIK</title>
+    <!-- FontAwesome & Chart.js & PapaParse -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #003F87;
+            --secondary-blue: #1C5AA0;
+            --orange: #F7931E;
+            --bg-color: #f4f7f6;
+            --white: #FFFFFF;
+            --text-dark: #333333;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 30px 20px;
+            color: var(--text-dark);
+        }
+
+        .dashboard-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .dashboard-title {
+            text-align: center;
+            color: var(--primary-blue);
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 25px;
+        }
+
+        /* --- Style Filter Box (Style Cukai Checkbox) --- */
+        .filter-box {
+            background: var(--white);
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid var(--primary-blue);
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filter-box h2 {
+            margin: 0;
+            color: var(--primary-blue);
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .filter-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Custom Dropdown Checkbox Style */
+        .custom-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-btn {
+            background: var(--white);
+            border: 1px solid #ccc;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 140px;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        .dropdown-btn:hover { border-color: var(--secondary-blue); }
+        .dropdown-menu-box {
+            display: none;
+            position: absolute;
+            background: var(--white);
+            min-width: 180px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            z-index: 100;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .dropdown-menu-box.show { display: block; }
+        .dropdown-item-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: #333;
+            font-weight: 500;
+            border-radius: 4px;
+        }
+        .dropdown-item-label:hover { background-color: #f0f4f8; }
+
+        /* --- Grid Utama (Tabel Kiri & Metrik Kanan) --- */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 25px;
+            align-items: start;
+        }
+
+        /* --- Tabel (Kiri) --- */
+        .table-card {
+            background: var(--white);
+            border-radius: 8px;
+            border: 2px solid var(--orange);
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 600px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background-color: var(--primary-blue);
+            color: var(--orange);
+            font-weight: 700;
+            font-size: 0.95rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table td {
+            font-size: 0.9rem;
+            color: var(--secondary-blue);
+            font-weight: 500;
+        }
+        
+        .data-table td:nth-child(4) {
+            text-align: left;
+        }
+
+        .data-table tr:hover td {
+            background-color: #f1f5f9;
+        }
+
+        /* --- Kolom Metrik & Grafik (Kanan) --- */
+        .metrics-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-box {
+            background: var(--white);
+            border-radius: 8px;
+            border: 1px solid var(--orange);
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .metric-label {
+            font-size: 0.95rem;
+            color: var(--primary-blue);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin: 0;
+        }
+
+        .chart-card {
+            background: var(--white);
+            border-radius: 8px;
+            border: 1px solid var(--orange);
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .chart-title {
+            color: var(--primary-blue);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+
+        @media(max-width: 992px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .filter-box {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .filter-options {
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+            }
+            .custom-dropdown, .dropdown-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <h1 class="dashboard-title">Pengelolaan Layanan TIK</h1>
+
+        <!-- Filter Box (Style Cukai Checkbox) -->
+        <div class="filter-box">
+            <h2>Filter Data Berdasarkan</h2>
+            <div class="filter-options">
+                
+                <!-- Dropdown Tahun -->
+                <div class="custom-dropdown">
+                    <div class="dropdown-btn" onclick="toggleDropdown('tahun')">
+                        <span id="tahunBtnText">Pilih Tahun</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                    </div>
+                    <div class="dropdown-menu-box" id="tahunDropdownMenu">
+                        <!-- Terisi otomatis -->
+                    </div>
+                </div>
+
+                <!-- Dropdown Bulan -->
+                <div class="custom-dropdown">
+                    <div class="dropdown-btn" onclick="toggleDropdown('bulan')">
+                        <span id="bulanBtnText">Pilih Bulan</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                    </div>
+                    <div class="dropdown-menu-box" id="bulanDropdownMenu">
+                        <!-- Terisi otomatis -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Kolom Kiri: Tabel Data -->
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th width="5%"></th>
+                                <th width="25%">Nomor Lapor</th>
+                                <th width="25%">Tanggal Lapor</th>
+                                <th width="45%">Aduan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tikTableBody">
+                            <!-- Data akan dimuat melalui JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Kolom Kanan: Metrik & Grafik -->
+            <div class="metrics-column">
+                
+                <div class="card-box">
+                    <div class="metric-label">Jumlah Aduan</div>
+                    <div class="metric-value" id="valTotalAduan">0</div>
+                </div>
+
+                <div class="metrics-row">
+                    <div class="card-box">
+                        <div class="metric-label">Diselesaikan</div>
+                        <div class="metric-value" id="valDiselesaikan">0</div>
+                    </div>
+                    <div class="card-box">
+                        <div class="metric-label">Belum Diselesaikan</div>
+                        <div class="metric-value" id="valBelumSelesai">0</div>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">Jenis Kendala</div>
+                    <div class="chart-container">
+                        <canvas id="jenisKendalaChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalData = [];
+        
+        const monthNames = {
+            '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+            '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+            '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
+        };
+
+        const ctx = document.getElementById('jenisKendalaChart').getContext('2d');
+        const kendalaChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ceisa 4.0', 'Lainnya'],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ['#003F87', '#F7931E'], 
+                    borderWidth: 1,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '55%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            padding: 20,
+                            font: { size: 11, family: 'Segoe UI' },
+                            color: '#555'
+                        }
+                    }
+                }
+            }
+        });
+
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJIvGZ2s51srep-cgziH6wXTYPKRnMMsm86s3CNgoUAbwmCt6sjHEQRHwFH4TxcMWmCI59V4oakEgh/pub?gid=1127511720&single=true&output=csv';
+
+        function toggleDropdown(type) {
+            const tahunMenu = document.getElementById('tahunDropdownMenu');
+            const bulanMenu = document.getElementById('bulanDropdownMenu');
+            if (type === 'tahun') {
+                tahunMenu.classList.toggle('show');
+                bulanMenu.classList.remove('show');
+            } else {
+                bulanMenu.classList.toggle('show');
+                tahunMenu.classList.remove('show');
+            }
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('.custom-dropdown')) {
+                document.getElementById('tahunDropdownMenu')?.classList.remove('show');
+                document.getElementById('bulanDropdownMenu')?.classList.remove('show');
+            }
+        }
+
+        function parseDateString(dateStr) {
+            if (!dateStr) return { year: '', month: '', formatted: '' };
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                const day = parseInt(parts[0], 10); 
+                const monthNum = parts[1];
+                const year = parts[2];
+                // Tampilan di tabel menggunakan format 3 huruf, misal "Jan" agar tidak terlalu panjang
+                const shortMonth = monthNames[monthNum] ? monthNames[monthNum].substring(0, 3) : monthNum;
+                const formatted = `${day} ${shortMonth} ${year}`;
+                return { year: year, month: monthNum, formatted: formatted };
+            }
+            return { year: '', month: '', formatted: dateStr };
+        }
+
+        function fetchData() {
+            Papa.parse(csvUrl, {
+                download: true,
+                header: false,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const rawRows = results.data;
+                    let processedData = [];
+
+                    for (let i = 2; i < rawRows.length; i++) {
+                        const row = rawRows[i];
+                        const tanggalMentah = row[2] ? row[2].trim() : ''; 
+                        const noLapor = row[3] ? row[3].trim() : '-'; 
+                        const status = row[4] ? row[4].trim().toUpperCase() : ''; 
+                        const sistem = row[5] ? row[5].trim() : ''; 
+                        const aduan = row[6] ? row[6].trim() : '-'; 
+
+                        if (!tanggalMentah || !aduan || aduan === '-') continue;
+
+                        const dateInfo = parseDateString(tanggalMentah);
+
+                        processedData.push({
+                            noLapor: noLapor,
+                            tanggalFormatted: dateInfo.formatted,
+                            tahun: dateInfo.year,
+                            bulan: dateInfo.month,
+                            status: status,
+                            sistem: sistem,
+                            aduan: aduan
+                        });
+                    }
+
+                    globalData = processedData;
+                    updateYearCheckboxes();
+                }
+            });
+        }
+
+        function getSelectedYears() {
+            return Array.from(document.querySelectorAll('#tahunDropdownMenu input[type="checkbox"]:checked')).map(cb => cb.value);
+        }
+        function getSelectedMonths() {
+            return Array.from(document.querySelectorAll('#bulanDropdownMenu input[type="checkbox"]:checked')).map(cb => cb.value);
+        }
+
+        function updateYearCheckboxes() {
+            const tahunMenu = document.getElementById('tahunDropdownMenu');
+            const previouslyChecked = getSelectedYears();
+            tahunMenu.innerHTML = '';
+            
+            let availableYears = new Set();
+            globalData.forEach(row => { if (row.tahun) availableYears.add(row.tahun); });
+            let sortedYears = Array.from(availableYears).sort();
+
+            if (sortedYears.length === 0) {
+                tahunMenu.innerHTML = '<span style="padding: 6px 10px; color: #666; font-size:0.9rem;">Tidak ada tahun</span>';
+                return;
+            }
+
+            sortedYears.forEach(y => {
+                let isChecked = previouslyChecked.length === 0 || previouslyChecked.includes(y);
+                tahunMenu.innerHTML += `<label class="dropdown-item-label"><input type="checkbox" value="${y}" ${isChecked ? 'checked' : ''} onchange="onYearChange()"> ${y}</label>`;
+            });
+
+            updateMonthCheckboxes();
+        }
+
+        function updateMonthCheckboxes() {
+            const bulanMenu = document.getElementById('bulanDropdownMenu');
+            const previouslyChecked = getSelectedMonths();
+            bulanMenu.innerHTML = '';
+            
+            let selectedYears = getSelectedYears();
+            let availableMonths = new Set();
+            
+            globalData.forEach(row => { 
+                if (selectedYears.includes(row.tahun) && row.bulan) {
+                    availableMonths.add(row.bulan); 
+                } 
+            });
+            
+            let sortedMonths = Array.from(availableMonths).sort();
+
+            if (sortedMonths.length === 0) {
+                bulanMenu.innerHTML = '<span style="padding: 6px 10px; color: #666; font-size:0.9rem;">Tidak ada bulan</span>';
+                updateButtonLabels();
+                processAndRender();
+                return;
+            }
+
+            sortedMonths.forEach(m => {
+                let isChecked = previouslyChecked.length === 0 || previouslyChecked.includes(m);
+                bulanMenu.innerHTML += `<label class="dropdown-item-label"><input type="checkbox" value="${m}" ${isChecked ? 'checked' : ''} onchange="filterData()"> ${monthNames[m] || m}</label>`;
+            });
+            
+            updateButtonLabels();
+            processAndRender();
+        }
+
+        function updateButtonLabels() {
+            let selectedYears = getSelectedYears();
+            document.getElementById('tahunBtnText').textContent = selectedYears.length === 0 ? 'Pilih Tahun' : (selectedYears.length === document.querySelectorAll('#tahunDropdownMenu input[type="checkbox"]').length ? 'Semua Tahun' : 'Tahun: ' + selectedYears.join(', '));
+            
+            let selectedMonths = getSelectedMonths();
+            let totalBulan = document.querySelectorAll('#bulanDropdownMenu input[type="checkbox"]').length;
+            document.getElementById('bulanBtnText').textContent = (selectedMonths.length === 0 || selectedMonths.length === totalBulan) ? 'Semua Bulan' : 'Bulan: ' + selectedMonths.map(m => (monthNames[m] || m).substring(0, 3)).join(', ');
+        }
+
+        function onYearChange() { updateMonthCheckboxes(); filterData(); }
+        function filterData() { updateButtonLabels(); processAndRender(); }
+
+        function processAndRender() {
+            const selectedYears = getSelectedYears();
+            const selectedMonths = getSelectedMonths();
+
+            let filteredData = [];
+            let totalSelesai = 0;
+            let totalBelum = 0;
+            let totalCeisa = 0;
+            let totalLainnya = 0;
+
+            globalData.forEach(item => {
+                if (item.tahun && !selectedYears.includes(item.tahun)) return;
+                if (item.bulan && !selectedMonths.includes(item.bulan)) return;
+
+                filteredData.push(item);
+
+                if (item.status === 'SELESAI') {
+                    totalSelesai++;
+                } else if (item.status === 'ON PROGRESS' || item.status === 'ONPROGRESS') {
+                    totalBelum++;
+                }
+
+                if (item.sistem.toLowerCase().includes('ceisa 4.0')) {
+                    totalCeisa++;
+                } else {
+                    totalLainnya++;
+                }
+            });
+
+            document.getElementById('valTotalAduan').innerText = filteredData.length;
+            document.getElementById('valDiselesaikan').innerText = totalSelesai;
+            document.getElementById('valBelumSelesai').innerText = totalBelum;
+
+            kendalaChart.data.datasets[0].data = [totalCeisa, totalLainnya];
+            kendalaChart.update();
+
+            const tbody = document.getElementById('tikTableBody');
+            tbody.innerHTML = '';
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #999; font-style: italic;">Tidak ada data aduan pada periode ini.</td></tr>`;
+                return;
+            }
+
+            filteredData.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: #666;">${index + 1}.</td>
+                    <td>${item.noLapor}</td>
+                    <td>${item.tanggalFormatted}</td>
+                    <td>${item.aduan}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        fetchData();
+        setInterval(fetchData, 300000);
+    </script>
+</body>
+</html>
